@@ -1,0 +1,183 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <POU Name="CMoDigitalInput" Id="{b3843e74-e9e1-4170-b6d1-cf86cf6be516}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK CMoDigitalInput
+VAR_IN_OUT
+    HAL             : CMoHALDigitalInput;
+    Framework       : CMoFramework;
+END_VAR
+VAR_INPUT
+    DeviceInput     : BOOL;
+    QualityInput    : BOOL;
+END_VAR
+VAR
+    ConditionedInput    : BOOL;
+    DebouncedValue      : BOOL;
+    OnDelayTimer        : TON;
+    OffDelayTimer       : TOF;
+    PrevValue           : BOOL;
+    FirstScan           : BOOL := TRUE;
+    ReSync              : BOOL;
+    NoFilterNeeded      : BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// =============================================================================
+// CMoDigitalInput — Digital Input Signal Conditioning
+// CMo Library v1.0
+// =============================================================================
+// Takes a raw hardware input and produces a conditioned .Value through:
+//   1. Mode determination (Normal / Simulation / Hand)
+//   2. Quality evaluation (hardware health, sim, spare)
+//   3. Mode selection + polarity inversion
+//   4. Debounce filtering (configurable on/off delay with resync)
+//   5. Hand value bumpless transfer
+//   6. Quality gating (bad quality -> configurable fallback)
+//   7. Edge detection (RisingEdge / FallingEdge one-shot pulses)
+//
+// Business logic reads .Value only. Never touch .Input, .SimInput,
+// .HandValue, or any plumbing directly.
+//
+// Usage:
+//   fbInput(
+//       HAL := GVL.MyInput,
+//       DeviceInput := Module1:I.Data[0],
+//       QualityInput := Module1_Status.Running,
+//       Framework := GVL.Framework
+//   );
+// =============================================================================
+
+// =================================================================
+// Mode determination
+// =================================================================
+HAL.HandIsActive := HAL.EnableHand AND Framework.MaintenanceEnabled;
+IF HAL.HandIsActive THEN
+    Framework.AnyHandOnLastScan := TRUE;
+END_IF;
+
+HAL.SimulationIsActive := HAL.EnableSimulation AND Framework.SimulationEnabled;
+IF HAL.SimulationIsActive THEN
+    Framework.AnySimulationOnLastScan := TRUE;
+END_IF;
+
+// =================================================================
+// Point quality
+// =================================================================
+IF HAL.IsSpare THEN
+    HAL.PointQuality := TRUE;
+ELSIF HAL.SimulationIsActive THEN
+    HAL.PointQuality := TRUE;
+ELSE
+    HAL.QualityInput := QualityInput;
+    HAL.PointQuality := QualityInput;
+END_IF;
+
+// =================================================================
+// Latch raw input
+// =================================================================
+HAL.Input := DeviceInput;
+
+// =================================================================
+// Mode selection + inversion
+// =================================================================
+IF HAL.SimulationIsActive THEN
+    IF HAL.Inverted THEN
+        ConditionedInput := NOT HAL.SimInput;
+    ELSE
+        ConditionedInput := HAL.SimInput;
+    END_IF;
+ELSE
+    IF HAL.Inverted THEN
+        ConditionedInput := NOT HAL.Input;
+    ELSE
+        ConditionedInput := HAL.Input;
+    END_IF;
+END_IF;
+
+// =================================================================
+// Debounce filter
+// =================================================================
+IF NOT HAL.EnableDelay THEN
+    DebouncedValue := ConditionedInput;
+    ReSync := TRUE;
+ELSE
+    IF HAL.InFilterOnTimeMsec < 0 THEN
+        HAL.InFilterOnTimeMsec := 0;
+    END_IF;
+    IF HAL.InFilterOffTimeMsec < 0 THEN
+        HAL.InFilterOffTimeMsec := 0;
+    END_IF;
+
+    OnDelayTimer(
+        IN := ConditionedInput OR (OffDelayTimer.Q AND OnDelayTimer.Q),
+        PT := DINT_TO_TIME(HAL.InFilterOnTimeMsec)
+    );
+
+    OffDelayTimer(
+        IN := ConditionedInput,
+        PT := DINT_TO_TIME(HAL.InFilterOffTimeMsec)
+    );
+
+    NoFilterNeeded := (ConditionedInput AND OnDelayTimer.Q)
+                   OR (NOT ConditionedInput AND NOT OffDelayTimer.Q);
+
+    IF ReSync THEN
+        IF (DebouncedValue AND OnDelayTimer.Q) OR
+           (NOT DebouncedValue AND NOT OnDelayTimer.Q) THEN
+            ReSync := FALSE;
+        END_IF;
+    END_IF;
+
+    IF ReSync OR HAL.IsSpare THEN
+        DebouncedValue := ConditionedInput;
+    ELSIF OnDelayTimer.Q THEN
+        DebouncedValue := TRUE;
+    ELSIF NOT OffDelayTimer.Q THEN
+        DebouncedValue := FALSE;
+    END_IF;
+END_IF;
+
+// =================================================================
+// Hand value tracking (bumpless transfer)
+// =================================================================
+IF NOT HAL.HandIsActive THEN
+    HAL.HandValue := HAL.Value;
+END_IF;
+
+// =================================================================
+// Final value with quality gating
+// =================================================================
+IF HAL.PointQuality THEN
+    IF HAL.HandIsActive THEN
+        HAL.Value := HAL.HandValue;
+    ELSE
+        HAL.Value := DebouncedValue;
+    END_IF;
+ELSE
+    HAL.Value := HAL.BadQualityValue;
+END_IF;
+
+// =================================================================
+// Edge detection
+// =================================================================
+IF FirstScan THEN
+    PrevValue := HAL.Value;
+    HAL.RisingEdge := FALSE;
+    HAL.FallingEdge := FALSE;
+    FirstScan := FALSE;
+ELSE
+    HAL.RisingEdge  := HAL.Value AND NOT PrevValue;
+    HAL.FallingEdge := NOT HAL.Value AND PrevValue;
+    PrevValue := HAL.Value;
+END_IF;
+]]></ST>
+    </Implementation>
+    <LineIds Name="CMoDigitalInput">
+      <LineId Id="151" Count="22" />
+      <LineId Id="150" Count="0" />
+      <LineId Id="174" Count="0" />
+      <LineId Id="27" Count="122" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

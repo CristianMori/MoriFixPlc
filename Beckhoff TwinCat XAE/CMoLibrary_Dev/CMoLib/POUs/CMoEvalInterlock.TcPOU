@@ -1,0 +1,79 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <POU Name="CMoEvalInterlock" Id="{6773398b-6757-44f4-bfc2-12cb80dd2a85}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK CMoEvalInterlock
+VAR_IN_OUT
+    Ilk             : CMoInterlock;
+END_VAR
+VAR
+    i               : INT;
+    AllMet          : BOOL;
+    AnyBypassed     : BOOL;
+    FirstDropped    : INT;
+    PrevOK          : BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// =================================================================
+// Clamp PointCount
+// =================================================================
+IF Ilk.PointCount < 1 THEN
+    Ilk.PointCount := 1;
+ELSIF Ilk.PointCount > 16 THEN
+    Ilk.PointCount := 16;
+END_IF;
+
+// =================================================================
+// Evaluate each condition
+// =================================================================
+AllMet := TRUE;
+AnyBypassed := FALSE;
+FirstDropped := -1;
+
+FOR i := 0 TO Ilk.PointCount - 1 DO
+    Ilk.ConditionMet[i] := Ilk.Condition[i] OR Ilk.Bypass[i];
+    Ilk.ConditionFaulted[i] := NOT Ilk.Condition[i] AND NOT Ilk.Bypass[i];
+
+    IF Ilk.Bypass[i] THEN
+        AnyBypassed := TRUE;
+    END_IF;
+
+    IF Ilk.ConditionFaulted[i] AND FirstDropped = -1 THEN
+        FirstDropped := i;
+    END_IF;
+
+    IF NOT Ilk.ConditionMet[i] THEN
+        AllMet := FALSE;
+    END_IF;
+END_FOR;
+
+// Clear unused conditions
+FOR i := Ilk.PointCount TO 15 DO
+    Ilk.ConditionMet[i] := TRUE;
+    Ilk.ConditionFaulted[i] := FALSE;
+END_FOR;
+
+// =================================================================
+// Outputs
+// =================================================================
+PrevOK := Ilk.OK;
+Ilk.OK := AllMet;
+Ilk.InBypass := AnyBypassed;
+Ilk.BypassAlarm := AnyBypassed;
+
+// =================================================================
+// FirstOut: latch on OK->NOT OK transition
+// =================================================================
+IF NOT Ilk.OK AND PrevOK THEN
+    Ilk.FirstOut := FirstDropped;
+ELSIF Ilk.OK THEN
+    Ilk.FirstOut := -1;
+END_IF;
+]]></ST>
+    </Implementation>
+    <LineIds Name="CMoEvalInterlock">
+      <LineId Id="19" Count="54" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

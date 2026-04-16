@@ -1,0 +1,16 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <DUT Name="CMoDateTimeString" Id="{015f34a0-9387-4240-9b03-0d7094b88c8f}">
+    <Declaration><![CDATA[// CMoDateTimeString — HMI-Readable Date/Time Strings
+// CMo Library v1.0 — Cristian Mori
+
+TYPE CMoDateTimeString :
+STRUCT
+    TimeString      : STRING(16);   // "HH:MM:SS"
+    DateString      : STRING(16);   // "YYYY-MM-DD"
+    HMIString       : STRING(32);   // "YYYY-MM-DD HH:MM:SS"
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

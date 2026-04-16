@@ -1,0 +1,219 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <POU Name="CMoMainRuntime" Id="{1441519c-a3b3-434f-b178-aa318c0d9578}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK CMoMainRuntime
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    Framework       : CMoFramework;
+END_VAR
+VAR
+    // Tick timers
+    tmTick100ms     : TON;
+    tmTick1s        : TON;
+    tmTick10s       : TON;
+
+    // Blinker timers
+    tmBlink100ms    : TON;
+    tmBlink250ms    : TON;
+    tmBlink500ms    : TON;
+    tmBlink1s       : TON;
+    tmBlink2s       : TON;
+    bState100ms     : BOOL;
+    bState250ms     : BOOL;
+    bState500ms     : BOOL;
+    bState1s        : BOOL;
+    bState2s        : BOOL;
+
+    // DateTime FBs
+    fbGetLocal      : CMoGetLocalDateTime;
+    fbGetUTC        : CMoGetUTCDateTime;
+    fbLocalToStr    : CMoDateTimeToString;
+    fbUTCToStr      : CMoDateTimeToString;
+	
+	    // Scan time measurement
+    fbScanTime      : CMoElapsedTime;
+    bScanRunning    : BOOL;
+ 
+    // Random number generator
+    fbRandom        : CMoRandom;
+END_VAR
+
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// =============================================================================
+// CMoMainRuntime — System Heartbeat
+// CMo Library v1.0
+// =============================================================================
+// Call ONCE per scan, FIRST in the task. Responsible for:
+//   - Measuring scan cycle time (via CMoElapsedTime)
+//   - Generating tick timers (100ms, 1s, 10s)
+//   - Generating blinker signals (100ms, 250ms, 500ms, 1s, 2s)
+//   - Latching LastScan accumulators into final alarm/sim/hand rollups
+//   - Resetting LastScan accumulators for the new scan
+//   - Generating random number (via CMoRandom)
+//   - Updating local and UTC date/time with formatted strings
+//   - Setting constants (AlwaysTrue, AlwaysFalse)
+//   - Incrementing free-running timer
+//
+// The LastScan pattern:
+//   MainRuntime resets all *LastScan fields at start of scan.
+//   Individual CMoAlarm/CMoDigitalInput FBs SET them during the scan.
+//   MainRuntime copies LastScan -> final at the NEXT call.
+//   This eliminates execution order dependencies.
+//
+// Usage:
+//   fbRuntime(Framework := GVL.Framework);  // first line of MAIN
+// =============================================================================
+
+// =================================================================
+// Scan time measurement: stop previous, read result, start new
+// =================================================================
+IF bScanRunning THEN
+    // Stop the timer from last scan
+    fbScanTime(Start := FALSE, Stop := TRUE, Reset := FALSE);
+    Framework.CycleTime := fbScanTime.ElapsedMs;
+    // Reset and start fresh for this scan
+    fbScanTime(Start := FALSE, Stop := FALSE, Reset := TRUE);
+    fbScanTime(Start := TRUE, Stop := FALSE, Reset := FALSE);
+ELSE
+    // First scan: just start
+    fbScanTime(Start := TRUE, Stop := FALSE, Reset := FALSE);
+    bScanRunning := TRUE;
+END_IF;
+
+// =================================================================
+// Latch previous scan accumulators into final outputs
+// =================================================================
+Framework.AnyAudibleOn       := Framework.AnyAudibleOnLastScan;
+Framework.AnyAlarmActive     := Framework.AnyAlarmActiveLastScan;
+Framework.AnyWarningActive   := Framework.AnyWarningActiveLastScan;
+Framework.AnyFaultActive     := Framework.AnyFaultActiveLastScan;
+Framework.AnyCriticalActive  := Framework.AnyCriticalActiveLastScan;
+Framework.AnySimulationOn    := Framework.AnySimulationOnLastScan;
+Framework.AnyHandOn          := Framework.AnyHandOnLastScan;
+Framework.AlarmCount         := Framework.TempAlarmCount;
+
+// =================================================================
+// Reset scratch for this scan
+// =================================================================
+Framework.AnyAudibleOnLastScan      := FALSE;
+Framework.AnyAlarmActiveLastScan    := FALSE;
+Framework.AnyWarningActiveLastScan  := FALSE;
+Framework.AnyFaultActiveLastScan    := FALSE;
+Framework.AnyCriticalActiveLastScan := FALSE;
+Framework.AnySimulationOnLastScan   := FALSE;
+Framework.AnyHandOnLastScan         := FALSE;
+Framework.TempAlarmCount            := 0;
+
+// =================================================================
+// Constants
+// =================================================================
+Framework.AlwaysTrue  := TRUE;
+Framework.AlwaysFalse := FALSE;
+
+// =================================================================
+// Random number generator
+// =================================================================
+fbRandom(Seed := Framework.LastRandomSeed);
+Framework.Random := fbRandom.Out;
+Framework.LastRandomSeed := fbRandom.NewSeed;
+
+// =================================================================
+// Ticks: pulse TRUE for one scan at each interval
+// =================================================================
+tmTick100ms(IN := TRUE, PT := T#100MS);
+Framework.Tick100ms := tmTick100ms.Q;
+IF tmTick100ms.Q THEN
+    tmTick100ms(IN := FALSE, PT := T#100MS);
+END_IF;
+
+tmTick1s(IN := TRUE, PT := T#1S);
+Framework.Tick1s := tmTick1s.Q;
+IF tmTick1s.Q THEN
+    tmTick1s(IN := FALSE, PT := T#1S);
+END_IF;
+
+tmTick10s(IN := TRUE, PT := T#10S);
+Framework.Tick10s := tmTick10s.Q;
+IF tmTick10s.Q THEN
+    tmTick10s(IN := FALSE, PT := T#10S);
+END_IF;
+
+// =================================================================
+// Blinkers: toggle state at each interval
+// =================================================================
+tmBlink100ms(IN := TRUE, PT := T#100MS);
+IF tmBlink100ms.Q THEN
+    bState100ms := NOT bState100ms;
+    tmBlink100ms(IN := FALSE, PT := T#100MS);
+END_IF;
+Framework.Blink100ms := bState100ms;
+
+tmBlink250ms(IN := TRUE, PT := T#250MS);
+IF tmBlink250ms.Q THEN
+    bState250ms := NOT bState250ms;
+    tmBlink250ms(IN := FALSE, PT := T#250MS);
+END_IF;
+Framework.Blink250ms := bState250ms;
+
+tmBlink500ms(IN := TRUE, PT := T#500MS);
+IF tmBlink500ms.Q THEN
+    bState500ms := NOT bState500ms;
+    tmBlink500ms(IN := FALSE, PT := T#500MS);
+END_IF;
+Framework.Blink500ms := bState500ms;
+
+tmBlink1s(IN := TRUE, PT := T#1S);
+IF tmBlink1s.Q THEN
+    bState1s := NOT bState1s;
+    tmBlink1s(IN := FALSE, PT := T#1S);
+END_IF;
+Framework.Blink1s := bState1s;
+
+tmBlink2s(IN := TRUE, PT := T#2S);
+IF tmBlink2s.Q THEN
+    bState2s := NOT bState2s;
+    tmBlink2s(IN := FALSE, PT := T#2S);
+END_IF;
+Framework.Blink2s := bState2s;
+
+// =================================================================
+// Free-running timer
+// =================================================================
+Framework.FreeRunningTimer := Framework.FreeRunningTimer + 1;
+
+// =================================================================
+// Date/Time: read local and UTC, format strings
+// =================================================================
+fbGetLocal(DateTime := Framework.CurrentLocalDateTime);
+fbGetUTC(DateTime := Framework.CurrentUTCDateTime);
+
+fbLocalToStr(
+    DateTime := Framework.CurrentLocalDateTime,
+    DateTimeString := Framework.CurrentLocalString
+);
+fbUTCToStr(
+    DateTime := Framework.CurrentUTCDateTime,
+    DateTimeString := Framework.CurrentUTCString
+);
+]]></ST>
+    </Implementation>
+    <LineIds Name="CMoMainRuntime">
+      <LineId Id="176" Count="22" />
+      <LineId Id="175" Count="0" />
+      <LineId Id="199" Count="0" />
+      <LineId Id="153" Count="13" />
+      <LineId Id="152" Count="0" />
+      <LineId Id="167" Count="0" />
+      <LineId Id="37" Count="28" />
+      <LineId Id="145" Count="5" />
+      <LineId Id="66" Count="0" />
+      <LineId Id="151" Count="0" />
+      <LineId Id="67" Count="77" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

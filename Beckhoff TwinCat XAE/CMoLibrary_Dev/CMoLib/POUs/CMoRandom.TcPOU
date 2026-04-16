@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <POU Name="CMoRandom" Id="{dea7fcda-420d-4524-89a7-9739055a0920}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK CMoRandom
+VAR_INPUT
+    Seed            : DINT := 48271;
+END_VAR
+VAR_OUTPUT
+    Out             : REAL;
+    NewSeed         : DINT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// =============================================================================
+// CMoRandom — Random Number Generator
+// CMo Library v1.0
+// =============================================================================
+// Park-Miller linear congruential generator.
+// Outputs a REAL between 0.0 and 1.0.
+//
+// Feed Seed from Framework.LastRandomSeed, write NewSeed back after call.
+// Called internally by CMoMainRuntime every scan.
+//
+// Usage:
+//   fbRandom(Seed := Framework.LastRandomSeed);
+//   Framework.Random := fbRandom.Out;
+//   Framework.LastRandomSeed := fbRandom.NewSeed;
+// =============================================================================
+
+// Ensure positive seed
+IF Seed <= 0 THEN
+    Seed := 1;
+END_IF;
+ 
+// Park-Miller LCG: next = (seed * 16807) MOD 2147483647
+// Classic "Minimal Standard" PRNG, different algorithm from typical PLC implementations
+NewSeed := (Seed MOD 127773) * 16807 - (Seed / 127773) * 2836;
+IF NewSeed <= 0 THEN
+    NewSeed := NewSeed + 2147483647;
+END_IF;
+ 
+Out := DINT_TO_REAL(NewSeed) / 2147483647.0;
+ ]]></ST>
+    </Implementation>
+    <LineIds Name="CMoRandom">
+      <LineId Id="46" Count="13" />
+      <LineId Id="17" Count="0" />
+      <LineId Id="26" Count="13" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

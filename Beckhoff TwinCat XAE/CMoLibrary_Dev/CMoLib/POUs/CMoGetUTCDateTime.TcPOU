@@ -1,0 +1,79 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <POU Name="CMoGetUTCDateTime" Id="{ad658418-82e2-49fb-a01e-7cea11377a49}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK CMoGetUTCDateTime
+VAR_IN_OUT
+    DateTime        : CMoDateTime;
+END_VAR
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	fbLocalTime     : FB_LocalSystemTime := (bEnable := TRUE, dwCycle := 1);
+    fbToUTC         : FB_TzSpecificLocalTimeToSystemTime;
+    fbGetTZ         : FB_GetTimeZoneInformation;
+    tzInfo          : ST_TimeZoneInformation;
+    utcTime         : TIMESTRUCT;
+    bTzValid        : BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// =============================================================================
+// CMoGetUTCDateTime — Read UTC System Time (Beckhoff)
+// CMo Library v1.0
+// Requires: Tc2_Utilities library
+// =============================================================================
+// Reads the local Windows system time via FB_LocalSystemTime, then
+// converts to UTC using FB_TzSpecificLocalTimeToSystemTime with
+// timezone info from FB_GetTimeZoneInformation.
+//
+// Must be called cyclically. Populates a CMoDateTime with UTC fields.
+// Called internally by CMoMainRuntime every scan.
+//
+// Usage:
+//   fbUTC(DateTime := Framework.CurrentUTCDateTime);
+// =============================================================================
+
+// Get local time (must call cyclically)
+fbLocalTime();
+
+// Get timezone info (for local-to-UTC conversion)
+fbGetTZ(
+    sNetID := '',
+    bExecute := NOT bTzValid,
+    tTimeout := DEFAULT_ADS_TIMEOUT
+);
+IF NOT fbGetTZ.bBusy AND NOT fbGetTZ.bError THEN
+    tzInfo := fbGetTZ.tzInfo;
+    bTzValid := TRUE;
+END_IF;
+
+// Convert local to UTC
+IF fbLocalTime.bValid AND bTzValid THEN
+    fbToUTC(
+        in := fbLocalTime.systemTime,
+        tzInfo := tzInfo
+    );
+    utcTime := fbToUTC.out;
+
+    DateTime.Year        := WORD_TO_DINT(utcTime.wYear);
+    DateTime.Month       := WORD_TO_DINT(utcTime.wMonth);
+    DateTime.Day         := WORD_TO_DINT(utcTime.wDay);
+    DateTime.Hour        := WORD_TO_DINT(utcTime.wHour);
+    DateTime.Minute      := WORD_TO_DINT(utcTime.wMinute);
+    DateTime.Second      := WORD_TO_DINT(utcTime.wSecond);
+    DateTime.MicroSecond := WORD_TO_DINT(utcTime.wMilliseconds) * 1000;
+    DateTime.IsLocal     := FALSE;
+END_IF;
+]]></ST>
+    </Implementation>
+    <LineIds Name="CMoGetUTCDateTime">
+      <LineId Id="53" Count="13" />
+      <LineId Id="52" Count="0" />
+      <LineId Id="67" Count="0" />
+      <LineId Id="21" Count="30" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

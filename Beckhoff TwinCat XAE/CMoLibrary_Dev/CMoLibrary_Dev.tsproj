@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<TcSmProject xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="http://www.beckhoff.com/schemas/2012/07/TcSmProject" TcSmVersion="1.0" TcVersion="3.1.4024.74">
+	<Project ProjectGUID="{FB9B4FA4-7ECA-4676-B7CB-6B9DDFF97766}" Target64Bit="true" ShowHideConfigurations="#x6">
+		<System>
+			<Settings MaxCpus="4" NonWinCpus="3" Packages="2">
+				<Cpu CpuId="1"/>
+				<IoIdleTask Affinity="#x00000002"/>
+			</Settings>
+			<Tasks>
+				<Task Id="3" Priority="20" CycleTime="50000" AmsPort="350" Affinity="#x00000002" AdtTasks="true">
+					<Name>PlcTask</Name>
+				</Task>
+			</Tasks>
+		</System>
+		<Plc>
+			<Project GUID="{27FD74FC-EBF3-4F67-8496-9D1F5F68D836}" Name="CMoLib" PrjFilePath="CMoLib\CMoLib.plcproj" TmcFilePath="CMoLib\CMoLib.tmc" ReloadTmc="true" AmsPort="851" FileArchiveSettings="#x000e" SymbolicMapping="true">
+				<Instance Id="#x08502000" TcSmClass="TComPlcObjDef" KeepUnrestoredLinks="2" TmcPath="CMoLib\CMoLib.tmc" TmcHash="{502E2EE6-585C-9899-5E62-AB3760B2C555}">
+					<Name>CMoLib Instance</Name>
+					<CLSID ClassFactory="TcPlc30">{08500001-0000-0000-F000-000000000064}</CLSID>
+					<Contexts>
+						<Context>
+							<Id>0</Id>
+							<Name>PlcTask</Name>
+							<ManualConfig>
+								<OTCID>#x02010030</OTCID>
+							</ManualConfig>
+							<Priority>20</Priority>
+							<CycleTime>5000000</CycleTime>
+						</Context>
+					</Contexts>
+					<TaskPouOids>
+						<TaskPouOid Prio="20" OTCID="#x08502001"/>
+					</TaskPouOids>
+				</Instance>
+			</Project>
+			<PlcAuxTask Affinity="#x00000002"/>
+		</Plc>
+	</Project>
+</TcSmProject>

@@ -1,0 +1,54 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <POU Name="CMoGetLocalDateTime" Id="{8cb8b7b6-173d-45a1-9618-7b1cf0721494}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK CMoGetLocalDateTime
+VAR_INPUT
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR_IN_OUT
+    DateTime        : CMoDateTime;
+END_VAR
+VAR
+	fbLocalTime     : FB_LocalSystemTime := (bEnable := TRUE, dwCycle := 1);
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// =============================================================================
+// CMoGetLocalDateTime — Read Local System Time (Beckhoff)
+// CMo Library v1.0
+// Requires: Tc2_Utilities library
+// =============================================================================
+// Reads the local Windows system time via FB_LocalSystemTime and
+// maps TIMESTRUCT fields into CMoDateTime.
+//
+// Must be called cyclically. Called internally by CMoMainRuntime
+// every scan.
+//
+// Usage:
+//   fbLocal(DateTime := Framework.CurrentLocalDateTime);
+// =============================================================================
+
+fbLocalTime();
+IF fbLocalTime.bValid THEN
+    DateTime.Year        := WORD_TO_DINT(fbLocalTime.systemTime.wYear);
+    DateTime.Month       := WORD_TO_DINT(fbLocalTime.systemTime.wMonth);
+    DateTime.Day         := WORD_TO_DINT(fbLocalTime.systemTime.wDay);
+    DateTime.Hour        := WORD_TO_DINT(fbLocalTime.systemTime.wHour);
+    DateTime.Minute      := WORD_TO_DINT(fbLocalTime.systemTime.wMinute);
+    DateTime.Second      := WORD_TO_DINT(fbLocalTime.systemTime.wSecond);
+    DateTime.MicroSecond := WORD_TO_DINT(fbLocalTime.systemTime.wMilliseconds) * 1000;
+    DateTime.IsLocal     := TRUE;
+END_IF;
+]]></ST>
+    </Implementation>
+    <LineIds Name="CMoGetLocalDateTime">
+      <LineId Id="111" Count="12" />
+      <LineId Id="80" Count="0" />
+      <LineId Id="124" Count="0" />
+      <LineId Id="81" Count="0" />
+      <LineId Id="92" Count="9" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

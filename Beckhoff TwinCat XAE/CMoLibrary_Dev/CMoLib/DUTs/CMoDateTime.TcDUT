@@ -1,0 +1,23 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <DUT Name="CMoDateTime" Id="{83b4921f-1491-417b-bcab-c3771cca3487}">
+    <Declaration><![CDATA[// CMoDateTime — Date and Time Structure
+// CMo Library v1.0 — Cristian Mori
+// TwinCAT / IEC 61131-3 Structured Text
+
+TYPE CMoDateTime :
+STRUCT
+    RawDateTime     : ARRAY[0..6] OF DINT;  // Platform-native wall clock data
+    Year            : DINT;
+    Month           : DINT;     // 1-12
+    Day             : DINT;     // 1-31
+    Hour            : DINT;     // 0-23
+    Minute          : DINT;     // 0-59
+    Second          : DINT;     // 0-59
+    MicroSecond     : DINT;     // 0-999999
+    IsLocal         : BOOL;     // TRUE = local time, FALSE = UTC
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

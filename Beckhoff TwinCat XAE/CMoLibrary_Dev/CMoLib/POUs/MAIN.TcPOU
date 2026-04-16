@@ -1,0 +1,102 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <POU Name="MAIN" Id="{a479a0a4-06e2-4b4f-930b-483d78def8ec}" SpecialFunc="None">
+    <Declaration><![CDATA[PROGRAM MAIN
+VAR
+	fbMainRuntime    : CMoMainRuntime;
+	fbInterlock 	 : CMoEvalInterlock;
+	fbPartPresent	 : CMoDigitalInput;
+	fbGuardClosed	 : CMoDigitalInput;
+	fbMotorRun		 : CMoDigitalOutput;
+	fDiffTime	     : CMoDiffTime;
+	SimPartPresent	 : BOOL;
+	SimGuardClosed	 : BOOL;
+	saveStart: BOOL;
+	StartDate: CMoDateTime;
+	saveEnd: BOOL;
+	EndDate: CMoDateTime;
+	totSec: DINT;
+	TotuSec: DINT;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// Heartbeat: always first
+fbMainRuntime(Framework := GVL.Framework);
+
+// Enable simulation globally
+GVL.Framework.SimulationEnabled := TRUE;
+
+GVL.Framework.SimulationEnabled := TRUE;
+
+// --- Part Present sensor ---
+GVL.DI_PartPresent.EnableSimulation := TRUE;
+GVL.DI_PartPresent.SimInput := SimPartPresent;
+GVL.DI_PartPresent.Name := 'Part Present';
+
+fbPartPresent(
+    HAL := GVL.DI_PartPresent,
+    DeviceInput := FALSE,
+    QualityInput := TRUE,
+    Framework := GVL.Framework
+);
+
+// --- Guard Door sensor ---
+GVL.DI_GuardClosed.EnableSimulation := TRUE;
+GVL.DI_GuardClosed.SimInput := SimGuardClosed;
+GVL.DI_GuardClosed.Name := 'Guard Closed';
+
+fbGuardClosed(
+    HAL := GVL.DI_GuardClosed,
+    DeviceInput := FALSE,
+    QualityInput := TRUE,
+    Framework := GVL.Framework
+);
+
+// --- Interlock ---
+GVL.Interlock_Motor.PointCount := 2;
+GVL.Interlock_Motor.ConditionName[0] := 'Part Present';
+GVL.Interlock_Motor.ConditionName[1] := 'Guard Closed';
+GVL.Interlock_Motor.Condition[0] := GVL.DI_PartPresent.Value;
+GVL.Interlock_Motor.Condition[1] := GVL.DI_GuardClosed.Value;
+
+fbInterlock(Ilk := GVL.Interlock_Motor);
+
+// --- Business logic: .Value only ---
+GVL.DO_MotorRun.EnableSimulation := TRUE;
+GVL.DO_MotorRun.Value := GVL.Interlock_Motor.OK;
+GVL.DO_MotorRun.Name := 'Motor Run';
+
+fbMotorRun(
+    HAL := GVL.DO_MotorRun,
+    QualityInput := TRUE,
+    Framework := GVL.Framework
+);
+
+IF saveStart THEN
+	StartDate :=  GVL.Framework.CurrentUTCDateTime;
+END_IF
+
+IF saveEnd THEN
+	EndDate :=  GVL.Framework.CurrentUTCDateTime;
+END_IF
+
+fDiffTime(StartTime := StartDate,EndTime := EndDate);
+totSec:=fDiffTime.TotalSeconds;
+totuSec:=fDiffTime.TotalMicroseconds;]]></ST>
+    </Implementation>
+    <LineIds Name="MAIN">
+      <LineId Id="8" Count="4" />
+      <LineId Id="14" Count="36" />
+      <LineId Id="65" Count="0" />
+      <LineId Id="51" Count="7" />
+      <LineId Id="66" Count="0" />
+      <LineId Id="13" Count="0" />
+      <LineId Id="68" Count="1" />
+      <LineId Id="72" Count="2" />
+      <LineId Id="71" Count="0" />
+      <LineId Id="77" Count="0" />
+      <LineId Id="2" Count="0" />
+      <LineId Id="83" Count="1" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

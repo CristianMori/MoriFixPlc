@@ -1,0 +1,52 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <DUT Name="CMoHalDigitalInput" Id="{07a67d5d-dd3d-414c-aa39-2c42d7ff3390}">
+    <Declaration><![CDATA[// CMoHALDigitalInput — Digital Input Hardware Abstraction Layer
+// CMo Library v1.0 — Cristian Mori
+//
+// THE CORE RULE: Business logic reads .Value only.
+//
+// Three signal modes:
+//   Normal:     Value follows hardware Input (optionally inverted, debounced)
+//   Simulation: Value follows SimInput (per-signal, for brownfield testing)
+//   Hand:       Value follows HandValue (operator override from HMI)
+
+TYPE CMoHALDigitalInput :
+STRUCT
+    // --- Raw hardware ---
+    Input               : BOOL;     // Raw hardware input (written by device driver)
+    QualityInput        : BOOL;     // Hardware health from module status (TRUE = good)
+
+    // --- Simulation ---
+    SimInput            : BOOL;     // Simulation input (written by twin/test)
+    EnableSimulation    : BOOL;     // Enable simulation for this point
+    SimulationIsActive  : BOOL;     // Computed: EnableSimulation AND Common.SimulationEnabled
+
+    // --- Hand (manual override) ---
+    HandValue           : BOOL;     // Manual override value (set from HMI)
+    EnableHand          : BOOL;     // Enable hand mode for this point
+    HandIsActive        : BOOL;     // Computed: EnableHand AND Common.MaintenanceEnabled
+
+    // --- THE OUTPUT ---
+    Value               : BOOL;     // Conditioned, filtered, mode-selected result
+
+    // --- Configuration ---
+    Inverted            : BOOL;     // Invert input polarity
+    BadQualityValue     : BOOL;     // Value to use when quality is bad (safe state)
+    EnableDelay         : BOOL;     // Enable debounce filtering
+    IsSpare             : BOOL;     // Mark as spare (bypasses quality, forces sim)
+    InFilterOnTimeMsec  : DINT;     // On-delay debounce (milliseconds)
+    InFilterOffTimeMsec : DINT;     // Off-delay debounce (milliseconds)
+
+    // --- Computed status ---
+    PointQuality        : BOOL;     // Computed quality (good if hw OK or sim active)
+    RisingEdge          : BOOL;     // One-shot pulse on Value 0 to 1
+    FallingEdge         : BOOL;     // One-shot pulse on Value 1 to 0
+
+    // --- Self-documenting ---
+    Name                : STRING(28);
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

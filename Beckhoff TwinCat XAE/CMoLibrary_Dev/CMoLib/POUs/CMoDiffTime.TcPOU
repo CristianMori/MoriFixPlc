@@ -1,0 +1,118 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <POU Name="CMoDiffTime" Id="{046ed4d9-4351-4217-aa3e-07b0efe14cc6}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK CMoDiffTime
+VAR_INPUT
+    StartTime : CMoDateTime;
+    EndTime   : CMoDateTime;
+END_VAR
+VAR_OUTPUT
+    Result            : CMoDateTime;
+    TotalSeconds      : DINT;
+    TotalMicroseconds : DINT;
+END_VAR
+VAR
+    jdnStart : DINT;
+    jdnEnd   : DINT;
+    a        : DINT;
+    y        : DINT;
+    m        : DINT;
+    diffDays : DINT;
+    diffUs   : DINT;
+    diffSec  : DINT;
+    diffMin  : DINT;
+    diffHr   : DINT;
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// =============================================================================
+// CMoDiffTime — DateTime Subtraction via Julian Day Number
+// CMo Library v1.0
+// =============================================================================
+// Computes (EndTime - StartTime) using Julian Day Number conversion.
+// Converts both dates to JDN (integer day count), subtracts, then
+// handles sub-day time remainder with borrow propagation.
+//
+// This is mathematically correct for all valid dates regardless of
+// month lengths, leap years, or century boundaries.
+//
+// JDN formula (all integer math):
+//   a := (14 - Month) / 12
+//   y := Year + 4800 - a
+//   m := Month + 12*a - 3
+//   JDN := Day + (153*m + 2)/5 + 365*y + y/4 - y/100 + y/400 - 32045
+//
+// Usage:
+//   fbDiff(StartTime := tStart, EndTime := tEnd);
+//   elapsed := fbDiff.TotalSeconds;
+// =============================================================================
+
+
+ 
+// JDN for StartTime
+a := (14 - StartTime.Month) / 12;
+y := StartTime.Year + 4800 - a;
+m := StartTime.Month + 12 * a - 3;
+jdnStart := StartTime.Day + (153 * m + 2) / 5 + 365 * y + y / 4 - y / 100 + y / 400 - 32045;
+ 
+// JDN for EndTime
+a := (14 - EndTime.Month) / 12;
+y := EndTime.Year + 4800 - a;
+m := EndTime.Month + 12 * a - 3;
+jdnEnd := EndTime.Day + (153 * m + 2) / 5 + 365 * y + y / 4 - y / 100 + y / 400 - 32045;
+ 
+// Day difference
+diffDays := jdnEnd - jdnStart;
+ 
+// Sub-day difference with borrow propagation
+diffUs := EndTime.MicroSecond - StartTime.MicroSecond;
+IF diffUs < 0 THEN
+    diffUs := diffUs + 1000000;
+    diffSec := -1;
+ELSE
+    diffSec := 0;
+END_IF;
+ 
+diffSec := diffSec + EndTime.Second - StartTime.Second;
+IF diffSec < 0 THEN
+    diffSec := diffSec + 60;
+    diffMin := -1;
+ELSE
+    diffMin := 0;
+END_IF;
+ 
+diffMin := diffMin + EndTime.Minute - StartTime.Minute;
+IF diffMin < 0 THEN
+    diffMin := diffMin + 60;
+    diffHr := -1;
+ELSE
+    diffHr := 0;
+END_IF;
+ 
+diffHr := diffHr + EndTime.Hour - StartTime.Hour;
+IF diffHr < 0 THEN
+    diffHr := diffHr + 24;
+    diffDays := diffDays - 1;
+END_IF;
+ 
+// Populate result
+Result.Year := 0;
+Result.Month := 0;
+Result.Day := diffDays;
+Result.Hour := diffHr;
+Result.Minute := diffMin;
+Result.Second := diffSec;
+Result.MicroSecond := diffUs;
+Result.IsLocal := FALSE;
+ 
+// Convenience totals
+TotalSeconds := diffSec + (diffMin * 60) + (diffHr * 3600) + (diffDays * 86400);
+TotalMicroseconds := diffUs;]]></ST>
+    </Implementation>
+    <LineIds Name="CMoDiffTime">
+      <LineId Id="73" Count="21" />
+      <LineId Id="116" Count="58" />
+      <LineId Id="176" Count="0" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

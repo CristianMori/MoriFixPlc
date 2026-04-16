@@ -1,0 +1,82 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <POU Name="CMoDateTimeToString" Id="{cc305bdb-e6a3-4466-82fb-5286932390ab}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK CMoDateTimeToString
+VAR_INPUT
+    DateTime        : CMoDateTime;
+END_VAR
+VAR_IN_OUT
+    DateTimeString  : CMoDateTimeString;
+END_VAR
+VAR_OUTPUT
+END_VAR
+VAR
+	sYear           : STRING(4);
+    sMonth          : STRING(2);
+    sDay            : STRING(2);
+    sHour           : STRING(2);
+    sMinute         : STRING(2);
+    sSecond         : STRING(2);
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// =============================================================================
+// CMoDateTimeToString — Format DateTime for HMI Display
+// CMo Library v1.0
+// =============================================================================
+// Converts CMoDateTime fields into zero-padded human-readable strings:
+//   TimeString: "HH:MM:SS"
+//   DateString: "YYYY-MM-DD"
+//   HMIString:  "YYYY-MM-DD HH:MM:SS"
+//
+// Usage:
+//   fbFmt(DateTime := myTime, DateTimeString := myStrings);
+//   // myStrings.HMIString now holds "2026-04-09 14:30:05"
+// =============================================================================
+
+sYear := DINT_TO_STRING(DateTime.Year);
+
+IF DateTime.Month < 10 THEN
+    sMonth := CONCAT('0', DINT_TO_STRING(DateTime.Month));
+ELSE
+    sMonth := DINT_TO_STRING(DateTime.Month);
+END_IF;
+
+IF DateTime.Day < 10 THEN
+    sDay := CONCAT('0', DINT_TO_STRING(DateTime.Day));
+ELSE
+    sDay := DINT_TO_STRING(DateTime.Day);
+END_IF;
+
+IF DateTime.Hour < 10 THEN
+    sHour := CONCAT('0', DINT_TO_STRING(DateTime.Hour));
+ELSE
+    sHour := DINT_TO_STRING(DateTime.Hour);
+END_IF;
+
+IF DateTime.Minute < 10 THEN
+    sMinute := CONCAT('0', DINT_TO_STRING(DateTime.Minute));
+ELSE
+    sMinute := DINT_TO_STRING(DateTime.Minute);
+END_IF;
+
+IF DateTime.Second < 10 THEN
+    sSecond := CONCAT('0', DINT_TO_STRING(DateTime.Second));
+ELSE
+    sSecond := DINT_TO_STRING(DateTime.Second);
+END_IF;
+
+DateTimeString.TimeString := CONCAT(CONCAT(CONCAT(CONCAT(sHour, ':'), sMinute), ':'), sSecond);
+DateTimeString.DateString := CONCAT(CONCAT(CONCAT(CONCAT(sYear, '-'), sMonth), '-'), sDay);
+DateTimeString.HMIString  := CONCAT(CONCAT(DateTimeString.DateString, ' '), DateTimeString.TimeString);
+]]></ST>
+    </Implementation>
+    <LineIds Name="CMoDateTimeToString">
+      <LineId Id="57" Count="11" />
+      <LineId Id="56" Count="0" />
+      <LineId Id="69" Count="0" />
+      <LineId Id="21" Count="34" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

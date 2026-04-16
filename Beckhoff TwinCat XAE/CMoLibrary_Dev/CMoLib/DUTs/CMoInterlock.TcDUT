@@ -1,0 +1,41 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <DUT Name="CMoInterlock" Id="{9151a43d-3090-4ddc-9b31-0ce62ac904b5}">
+    <Declaration><![CDATA[// CMoInterlock — Interlock Condition Structure
+// CMo Library v1.0 — Cristian Mori
+//
+// Up to 16 AND conditions. All must be TRUE for interlock to pass.
+// FirstOut: which condition dropped first (root cause).
+// Per-condition bypass from HMI with bypass alarm.
+
+TYPE CMoInterlock :
+STRUCT
+    // Configuration
+    PointCount          : INT := 4;     // Number of active conditions (1-16)
+
+    // Condition inputs (set by business logic each scan)
+    Condition           : ARRAY[0..15] OF BOOL;
+
+    // Per-condition bypass (set from HMI)
+    Bypass              : ARRAY[0..15] OF BOOL;
+
+    // Outputs
+    OK                  : BOOL;     // All active conditions met (or bypassed)
+    InBypass            : BOOL;     // At least one condition is bypassed
+    BypassAlarm         : BOOL;     // Alarm: operating with bypassed conditions
+
+    // First-out tracking
+    FirstOut            : INT := -1; // Index of first condition to drop (-1 = none)
+
+    // Per-condition status (for HMI popup)
+    ConditionMet        : ARRAY[0..15] OF BOOL;  // Condition OR its bypass
+    ConditionFaulted    : ARRAY[0..15] OF BOOL;  // Failed AND not bypassed
+
+    // Self-documenting names
+    Name                : STRING(28);
+    ConditionName       : ARRAY[0..15] OF STRING(28);
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

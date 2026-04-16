@@ -1,0 +1,43 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <DUT Name="CMoHalDigitalOutput" Id="{640c446b-ccd4-434f-84c6-5adbea49237d}">
+    <Declaration><![CDATA[// CMoHALDigitalOutput — Digital Output Hardware Abstraction Layer
+// CMo Library v1.0 — Cristian Mori
+//
+// Business logic writes .Value. The FB handles inversion, hand mode,
+// simulation capture, and quality gating before driving physical output.
+
+TYPE CMoHALDigitalOutput :
+STRUCT
+    // --- Physical output ---
+    Output              : BOOL;     // Physical output (written by FB to hardware)
+    QualityInput        : BOOL;     // Hardware health (TRUE = good)
+
+    // --- Simulation ---
+    SimOutput           : BOOL;     // Shadow output for twin consumption during sim
+    EnableSimulation    : BOOL;     // Enable simulation for this point
+    SimulationIsActive  : BOOL;     // Computed: EnableSimulation AND Common.SimulationEnabled
+
+    // --- Hand (manual override) ---
+    HandValue           : BOOL;     // Manual override value (set from HMI)
+    EnableHand          : BOOL;     // Enable hand mode for this point
+    HandIsActive        : BOOL;     // Computed: EnableHand AND Common.MaintenanceEnabled
+
+    // --- THE INPUT (business logic writes this) ---
+    Value               : BOOL;     // Business logic command
+
+    // --- Configuration ---
+    Inverted            : BOOL;     // Invert output polarity
+    BadQualityValue     : BOOL;     // Value when quality is bad (safe state)
+    IsSpare             : BOOL;     // Mark as spare
+
+    // --- Computed status ---
+    PointQuality        : BOOL;     // Computed quality
+
+    // --- Self-documenting ---
+    Name                : STRING(28);
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

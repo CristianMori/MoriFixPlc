@@ -1,0 +1,89 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <DUT Name="CMoFramework" Id="{5c0d7915-a553-4548-88f4-a1f37e8fe2cc}">
+    <Declaration><![CDATA[// CMoCommon — Shared System Context
+// CMo Library v1.0 — Cristian Mori
+//
+// One instance per PLC. Passed as VAR_IN_OUT to every FB.
+// Temp* fields are scratch accumulators: reset each scan by CMoMasterTask,
+// set by individual FBs, then latched into final fields next scan.
+
+TYPE CMoFramework :
+STRUCT
+    // ---- Alarm rollup flags ----
+    AnyAudibleOn            : BOOL;
+    AnyAudibleOnLastScan        : BOOL;
+    AnyAlarmActive          : BOOL;
+    AnyAlarmActiveLastScan      : BOOL;
+    AnyWarningActive        : BOOL;
+    AnyWarningActiveLastScan    : BOOL;
+    AnyFaultActive          : BOOL;
+    AnyFaultActiveLastScan      : BOOL;
+    AnyCriticalActive       : BOOL;
+    AnyCriticalActiveLastScan   : BOOL;
+
+    // ---- Simulation / Hand detection ----
+    AnySimulationOn         : BOOL;
+    AnySimulationOnLastScan     : BOOL;
+    AnyHandOn               : BOOL;
+    AnyHandOnLastScan           : BOOL;
+
+    // ---- HMI commands ----
+    SilenceCmd              : BOOL;     // HMI silence button (momentary)
+    GlobalAlmRstCmd         : BOOL;     // HMI global alarm reset (momentary)
+    GlobalAlmRstEn          : BOOL;     // Enable global alarm reset
+
+    // ---- System modes ----
+    SimulationEnabled       : BOOL;     // Master simulation enable
+    EmulationEnabled        : BOOL;     // Running on emulated controller
+    MaintenanceEnabled      : BOOL;     // Enables Hand mode
+
+    // ---- Tick timers (pulse TRUE for one scan) ----
+    Tick100ms               : BOOL;
+    Tick1s                  : BOOL;
+    Tick10s                 : BOOL;
+
+    // ---- Blinker signals (toggle on/off) ----
+	Blink100ms				: BOOL;
+    Blink250ms              : BOOL;
+    Blink500ms              : BOOL;
+    Blink1s                 : BOOL;
+    Blink2s                 : BOOL;
+
+    // ---- System flags ----
+    InhibitAlarms           : BOOL;     // Corporate alarm inhibit
+    AlwaysTrue              : BOOL;     // Constant TRUE
+    AlwaysFalse             : BOOL;     // Constant FALSE
+  
+
+    // ---- Counters ----
+    ApplicationCount        : DINT;
+    AlarmCount              : INT;
+    TempAlarmCount          : INT;
+    FreeRunningTimer        : DINT;     // Free-running ms counter
+    LastRandomSeed          : DINT;
+	Random 					: REAL;
+    CycleTime               : REAL;     // Last scan time (seconds)
+
+    // ---- Group-level alarm rollups (512 groups as bit arrays) ----
+    InhibitAlarmGroups              : ARRAY[0..15] OF DWORD;
+
+    // ---- Date/Time ----
+    CurrentUTCDateTime      : CMoDateTime;
+    CurrentLocalDateTime    : CMoDateTime;
+    CurrentUTCString        : CMoDateTimeString;
+    CurrentLocalString      : CMoDateTimeString;
+
+    // ---- Spare HAL instances ----
+    NotUsedDI                 : CMoHALDigitalInput;
+    NotUsedDO                 : CMoHALDigitalOutput;
+
+    // ---- Module status config ----
+    ModuleStatusMinInterval         : DINT := 5000;     // ms between checks
+    ModuleStatusRandomDistribution  : DINT := 2000;     // ms random spread
+    ModuleStatusGraceTime           : DINT := 30000;    // ms before declaring lost
+END_STRUCT
+END_TYPE
+]]></Declaration>
+  </DUT>
+</TcPlcObject>

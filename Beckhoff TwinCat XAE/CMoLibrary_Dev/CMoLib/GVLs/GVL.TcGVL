@@ -1,0 +1,14 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <GVL Name="GVL" Id="{58bd1584-4342-4191-909e-23bd57107275}">
+    <Declaration><![CDATA[{attribute 'qualified_only'}
+VAR_GLOBAL
+    Framework       : CMoFramework;
+	
+	DI_PartPresent  : CMoHALDigitalInput;
+    DI_GuardClosed  : CMoHALDigitalInput;
+    DO_MotorRun     : CMoHALDigitalOutput;
+    Interlock_Motor : CMoInterlock;
+END_VAR]]></Declaration>
+  </GVL>
+</TcPlcObject>

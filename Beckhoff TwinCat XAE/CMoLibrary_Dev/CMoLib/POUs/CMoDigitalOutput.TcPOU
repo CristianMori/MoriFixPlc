@@ -1,0 +1,123 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <POU Name="CMoDigitalOutput" Id="{5967f019-cee6-4165-a067-459ad03f5b23}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK CMoDigitalOutput
+VAR_IN_OUT
+    HAL             : CMoHALDigitalOutput;
+    Framework       : CMoFramework;
+END_VAR
+VAR_INPUT
+    QualityInput    : BOOL;
+END_VAR
+VAR_OUTPUT
+    DeviceOutput    : BOOL;
+END_VAR
+VAR
+    ConditionedOutput   : BOOL;
+    OutputWithHand      : BOOL;
+END_VAR
+]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// =============================================================================
+// CMoDigitalOutput — Digital Output Signal Conditioning
+// CMo Library v1.0
+// =============================================================================
+// Takes .Value written by business logic and produces a conditioned
+// physical output through:
+//   1. Mode determination (Normal / Simulation / Hand)
+//   2. Quality evaluation (hardware health, sim, spare)
+//   3. Polarity inversion
+//   4. Hand value bumpless transfer
+//   5. Hand mode selection
+//   6. Simulation gating (suppress physical output, capture to .SimOutput)
+//
+// In simulation mode: DeviceOutput is suppressed. The digital twin
+// reads .SimOutput to see what business logic commanded.
+//
+// Usage:
+//   fbOutput(
+//       HAL := GVL.MyOutput,
+//       QualityInput := Module2_Status.Running,
+//       Framework := GVL.Framework
+//   );
+//   Module2:O.Data[0] := fbOutput.DeviceOutput;
+// =============================================================================
+
+// =================================================================
+// Mode determination
+// =================================================================
+HAL.HandIsActive := HAL.EnableHand AND Framework.MaintenanceEnabled AND NOT HAL.IsSpare;
+IF HAL.HandIsActive THEN
+    Framework.AnyHandOnLastScan := TRUE;
+END_IF;
+
+HAL.SimulationIsActive := HAL.EnableSimulation AND Framework.SimulationEnabled;
+IF HAL.SimulationIsActive THEN
+    Framework.AnySimulationOnLastScan := TRUE;
+END_IF;
+
+// =================================================================
+// Point quality
+// =================================================================
+IF HAL.IsSpare THEN
+    HAL.PointQuality := TRUE;
+ELSIF HAL.SimulationIsActive THEN
+    HAL.PointQuality := TRUE;
+ELSE
+    HAL.QualityInput := QualityInput;
+    HAL.PointQuality := QualityInput;
+END_IF;
+
+// =================================================================
+// Inversion
+// =================================================================
+IF NOT HAL.IsSpare THEN
+    IF HAL.Inverted THEN
+        ConditionedOutput := NOT HAL.Value;
+    ELSE
+        ConditionedOutput := HAL.Value;
+    END_IF;
+ELSE
+    ConditionedOutput := FALSE;
+END_IF;
+
+// =================================================================
+// Hand value tracking (bumpless transfer)
+// =================================================================
+IF NOT HAL.HandIsActive THEN
+    HAL.HandValue := HAL.Value;
+END_IF;
+
+// =================================================================
+// Hand mode selection
+// =================================================================
+IF HAL.HandIsActive THEN
+    OutputWithHand := HAL.HandValue;
+ELSE
+    OutputWithHand := ConditionedOutput;
+END_IF;
+
+// =================================================================
+// Simulation gating
+// =================================================================
+IF HAL.SimulationIsActive THEN
+    DeviceOutput := FALSE;
+ELSE
+    DeviceOutput := OutputWithHand;
+END_IF;
+
+HAL.SimOutput := OutputWithHand;
+HAL.Output := DeviceOutput;
+
+]]></ST>
+    </Implementation>
+    <LineIds Name="CMoDigitalOutput">
+      <LineId Id="105" Count="22" />
+      <LineId Id="104" Count="0" />
+      <LineId Id="128" Count="0" />
+      <LineId Id="25" Count="64" />
+      <LineId Id="103" Count="0" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>

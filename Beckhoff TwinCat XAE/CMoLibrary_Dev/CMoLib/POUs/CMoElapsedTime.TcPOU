@@ -1,0 +1,81 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<TcPlcObject Version="1.1.0.1" ProductVersion="3.1.4024.16">
+  <POU Name="CMoElapsedTime" Id="{13c22e58-144f-4bc3-a5cb-ab8088a65ebb}" SpecialFunc="None">
+    <Declaration><![CDATA[FUNCTION_BLOCK CMoElapsedTime
+VAR_INPUT
+    Start           : BOOL;         // Begin measurement (rising edge)
+    Stop            : BOOL;         // End measurement (rising edge)
+    Reset           : BOOL;         // Clear measurement
+END_VAR
+VAR_OUTPUT
+    ElapsedMs       : REAL;         // Result in milliseconds
+    Running         : BOOL;         // TRUE while measuring
+END_VAR
+VAR
+    PrevStart       : BOOL;         // Edge detection for Start
+    PrevStop        : BOOL;         // Edge detection for Stop
+    tmRun           : TON;          // Internal timer
+    Capturing       : BOOL;         // Measurement in progress
+END_VAR]]></Declaration>
+    <Implementation>
+      <ST><![CDATA[// =============================================================================
+// CMoElapsedTime — Elapsed Time Measurement
+// CMo Library v1.0
+// =============================================================================
+// Measures elapsed time between Start and Stop rising edges.
+// Uses a TON timer internally for millisecond-resolution measurement.
+// Live readout available via ElapsedMs while Running is TRUE.
+//
+// Usage:
+//   myTimer(Start := TRUE);       // Begin measurement
+//   // ... code or scans pass ...
+//   myTimer(Stop := TRUE);        // End measurement
+//   result := myTimer.ElapsedMs;  // Read duration in ms
+//   myTimer(Reset := TRUE);       // Clear for next use
+// =============================================================================
+
+// =================================================================
+// Reset: clear everything
+// =================================================================
+IF Reset THEN
+    ElapsedMs := 0.0;
+    Running := FALSE;
+    Capturing := FALSE;
+    RETURN;
+END_IF;
+
+// =================================================================
+// Start on rising edge: reset timer and begin capturing
+// =================================================================
+IF Start AND NOT PrevStart THEN
+    Capturing := TRUE;
+    Running := TRUE;
+    tmRun(IN := FALSE, PT := T#49D);   // Reset timer (49 day max range)
+END_IF;
+PrevStart := Start;
+
+// =================================================================
+// Accumulate while running: keep timer alive, update live readout
+// =================================================================
+IF Capturing THEN
+    tmRun(IN := TRUE, PT := T#49D);
+    ElapsedMs := TIME_TO_REAL(tmRun.ET);
+END_IF;
+
+// =================================================================
+// Stop on rising edge: freeze result
+// =================================================================
+IF Stop AND NOT PrevStop AND Capturing THEN
+    ElapsedMs := TIME_TO_REAL(tmRun.ET);
+    Capturing := FALSE;
+    Running := FALSE;
+END_IF;
+PrevStop := Stop;]]></ST>
+    </Implementation>
+    <LineIds Name="CMoElapsedTime">
+      <LineId Id="68" Count="14" />
+      <LineId Id="100" Count="36" />
+      <LineId Id="9" Count="0" />
+    </LineIds>
+  </POU>
+</TcPlcObject>
