@@ -303,7 +303,7 @@ MoriFixPLC/
 
 This library is being built in public as part of the **#MoriFixPLC** series on LinkedIn. Each episode covers a piece of the architecture: what it does, why it exists, and what problem it solves.
 
-Follow the series: [linkedin.com/in/cristian-mori](https://www.linkedin.com/in/cristian-mori/)
+Follow the series: [linkedin.com/in/c-mori](https://www.linkedin.com/in/c-mori/)
 
 ---
 
