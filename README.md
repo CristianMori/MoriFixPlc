@@ -253,49 +253,25 @@ The logic is identical across all three platforms. What changes:
 
 ---
 
-## Project Structure
-
-```
-MoriFixPLC/
-├── Beckhoff/
-│   ├── DUTs/           # Data type definitions (.TcDUT)
-│   ├── POUs/           # Function blocks (.TcPOU)
-│   └── GVLs/           # Global variable lists
-├── Siemens/
-│   ├── UDTs/           # PLC data types
-│   └── FBs/            # Function blocks (.scl)
-├── Rockwell/
-│   ├── UDTs/           # Data types (.L5X)
-│   └── AOIs/           # Add-On Instructions (.L5X)
-└── README.md
-```
-
----
-
 ## Getting Started
 
 ### Beckhoff (Free, no expiration)
 
 1. Download TwinCAT 3 XAE Shell from beckhoff.com
-2. Create a new TwinCAT XAE Project
-3. Add a Standard PLC Project
-4. Import DUTs in dependency order, then POUs
-5. Build, activate, login, start
+2. Load the project in the repo under the Beckhoff TwinCat XAE folder 
+3. Build, activate, login, start
 
 ### Siemens (21-day trial)
 
 1. Download TIA Portal V20 trial + PLCSIM from Siemens support
-2. Create a new project with an S7-1500 CPU
-3. Add PLC data types manually in the table editor
-4. Create FBs in SCL, paste code
-5. Compile and download to PLCSIM
+2. Load the project in the repo under the Siemens TIA V20 folder
+3. Compile and download to PLCSIM
 
 ### Rockwell (License required)
 
 1. Open Studio 5000 v35+
-2. File → Import Component for each L5X file
-3. Import UDTs first (dependency order), then AOIs
-4. Create controller tags and wire up MAIN
+2. Load the projec in the repo under the Rockwell V35 folder
+3. Download to Logix Echo
 
 ---
 
