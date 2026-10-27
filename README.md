@@ -416,6 +416,4 @@ Part of a family of open-source robotics / industrial-automation libraries by @C
 
 ## License
 
-No `LICENSE` file is in this repository, and GitHub reports no license.
-
-<!-- TODO(owner): Choose a license and add a LICENSE file. Do not document MIT, Apache-2.0, or any other license in this README until that file exists. -->
+This project is licensed under the [Apache License 2.0](LICENSE).
